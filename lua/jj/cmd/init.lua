@@ -721,6 +721,9 @@ function M.j(args)
 	local remaining_args_str = table.concat(remaining_args, " ")
 
 	local handlers = {
+		summary = function()
+			require("jj.summary").entrypoint()
+		end,
 		describe = function()
 			M.describe(remaining_args_str ~= "" and remaining_args_str or nil)
 		end,
