@@ -637,27 +637,12 @@ function M.j(args)
 		return
 	end
 
-	local cmd = nil
 	if #args == 0 then
-		local default_cmd_str, success = runner.execute_command(
-			"jj config get ui.default-command",
-			"Error getting user's default command",
-			nil,
-			true
-		)
-		if not success then
-			terminal.run("jj", M.terminal_keymaps())
-			return
-		end
-
-		local default_cmd = parser.parse_default_cmd(default_cmd_str and default_cmd_str or "")
-		if default_cmd == nil then
-			terminal.run("jj", M.terminal_keymaps())
-			return
-		end
-		cmd = default_cmd
+		require("jj.ui.summary").open()
+		return
 	end
 
+	local cmd = nil
 	if type(args) == "string" then
 		cmd = vim.split(args, "%s+")
 	elseif cmd == nil then
