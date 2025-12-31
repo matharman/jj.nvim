@@ -37,6 +37,10 @@ local function jj_diff()
 		return {}
 	end
 
+	if out:len() == 0 then
+		return {}
+	end
+
 	return vim.split(out, "\n")
 end
 
@@ -128,9 +132,7 @@ local function files_from_diff()
 	diff = vim.list_slice(diff, #change_list + 1)
 
 	-- Parse hunks from the diff and populate change_list
-	change_list = parse_diff_hunks(diff, change_list)
-
-	return change_list
+	return parse_diff_hunks(diff, change_list)
 end
 
 function M.open()
@@ -170,8 +172,6 @@ function M.open()
 							end_line = start_line + #expanded
 						end
 
-						vim.notify(string.format("Checking %s: %d in [%d to %d]", path, row, start_line, end_line))
-
 						if row >= start_line and row <= end_line then
 							local replacement = {}
 
@@ -185,10 +185,7 @@ function M.open()
 							end
 
 							if #replacement == 0 then
-								print("collapsing")
 								vim.api.nvim_win_set_cursor(0, { start_line, col })
-							else
-								print("expanding")
 							end
 							vim.api.nvim_buf_set_lines(M.buf, start_line, end_line, false, replacement)
 							break
