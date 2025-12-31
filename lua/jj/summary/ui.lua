@@ -19,7 +19,7 @@ local M = {
 
 local function jj_short_log()
 	local cmd =
-		'jj log --quiet --color=never --no-graph --no-pager --reversed -r @- -r @ -T \'change_id.shortest(8) ++ ": " ++ description.first_line() ++ "\n"\''
+		'jj log --quiet --color=never --no-graph --no-pager --reversed -r @- -r @ -T \'change_id.shortest(8) ++ ": " ++ if(description.first_line(), description.first_line(), "(no description set)") ++ "\n"\''
 
 	local out, ok = require("jj.core.runner").execute_command(cmd, nil, nil, true)
 	if not ok or not out then
