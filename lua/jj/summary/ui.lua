@@ -3,6 +3,7 @@ local M = {
 	text = {},
 	file_line_ranges = {},
 	expanded = {},
+	selected = {},
 }
 
 --- @class jj.summary.File
@@ -172,6 +173,83 @@ function M.open()
 				lhs = "g?",
 				rhs = function()
 					vim.notify("You hit the help key, congrats!", vim.log.levels.INFO)
+				end,
+			},
+			{
+				mode = "n",
+				lhs = "s",
+				rhs = function()
+					local cursor = vim.api.nvim_win_get_cursor(0)
+					local row = cursor[1]
+					local file, expansion, start_line, _ = file_under_cursor(row)
+					if not file or not expansion then
+						return
+					end
+
+					local select_start_line_no = row - start_line
+					local select_end_line_no
+
+					local line_content = expansion[select_start_line_no]
+
+					-- Support selecting the whole hunk
+					if line_content:find("^@@ .* @@") then
+						for i = select_start_line_no + 1, #expansion do
+							if expansion[i]:find("^@@ .* @@") then
+								break
+							end
+
+							select_end_line_no = i
+						end
+
+					-- Support selecting a single line
+					else
+						select_end_line_no = select_start_line_no
+					end
+
+					local selections = M.selected[file.path] or {}
+
+					-- Determine if all lines in our range are already selected;
+					-- if so, then we will de select them.
+					--
+					-- However, if ANY line in our range is NOT selected,
+					-- we'll simply expand the selection to include all lines
+					-- in the range.
+
+					local all_selected = true
+					for i = select_start_line_no, select_end_line_no do
+						if not vim.list_contains(selections, i) then
+							all_selected = false
+							break
+						end
+					end
+
+					if all_selected then
+						-- Deselect all lines in the range
+						for i = select_start_line_no, select_end_line_no do
+							for idx, val in ipairs(selections) do
+								if val == i then
+									table.remove(selections, idx)
+									break
+								end
+							end
+						end
+					else
+						-- Select all lines in the range
+						for i = select_start_line_no, select_end_line_no do
+							if not vim.list_contains(selections, i) then
+								table.insert(selections, i)
+							end
+						end
+					end
+
+					if #selections > 0 then
+						table.sort(selections)
+						M.selected[file.path] = selections
+					else
+						M.selected[file.path] = nil
+					end
+
+					print(vim.inspect(selections))
 				end,
 			},
 			{
