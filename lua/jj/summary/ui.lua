@@ -242,7 +242,7 @@ function M.render()
 					path = file.path
 				end
 
-				table.insert(text, path)
+				table.insert(text, string.format("%s %s", g:sub(1, 1):upper(), path))
 
 				local file_start_line = #text
 				M.file_line_ranges[path] = { file, file_start_line }
