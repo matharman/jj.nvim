@@ -135,6 +135,26 @@ local function files_from_diff()
 	return parse_diff_hunks(diff, change_list)
 end
 
+local function file_under_cursor(row)
+	for path, meta in pairs(M.file_line_ranges) do
+		local file = meta[1]
+		local start_line = meta[2]
+		local end_line = start_line
+
+		local expanded = M.expanded[path]
+
+		if expanded then
+			end_line = start_line + #expanded
+		end
+
+		if row >= start_line and row <= end_line then
+			return file, expanded, start_line, end_line
+		end
+	end
+
+	return nil, nil, -1, -1
+end
+
 function M.open()
 	if M.buf ~= -1 then
 		return
@@ -161,36 +181,27 @@ function M.open()
 					local cursor = vim.api.nvim_win_get_cursor(0)
 					local row = cursor[1]
 					local col = cursor[2]
-					for path, meta in pairs(M.file_line_ranges) do
-						local file = meta[1]
-						local start_line = meta[2]
-						local end_line = start_line
-
-						local expanded = M.expanded[path]
-
-						if expanded then
-							end_line = start_line + #expanded
-						end
-
-						if row >= start_line and row <= end_line then
-							local replacement = {}
-
-							if expanded then
-								M.expanded[path] = nil
-							else
-								for _, hunk in ipairs(file.hunks) do
-									vim.list_extend(replacement, hunk)
-								end
-								M.expanded[path] = replacement
-							end
-
-							if #replacement == 0 then
-								vim.api.nvim_win_set_cursor(0, { start_line, col })
-							end
-							vim.api.nvim_buf_set_lines(M.buf, start_line, end_line, false, replacement)
-							break
-						end
+					local file, expanded, start_line, end_line = file_under_cursor(row)
+					if not file then
+						return
 					end
+
+					local replacement = {}
+
+					if expanded then
+						M.expanded[file.path] = nil
+					else
+						for _, hunk in ipairs(file.hunks) do
+							vim.list_extend(replacement, hunk)
+						end
+						M.expanded[file.path] = replacement
+					end
+
+					if #replacement == 0 then
+						vim.api.nvim_win_set_cursor(0, { start_line, col })
+					end
+
+					vim.api.nvim_buf_set_lines(M.buf, start_line, end_line, false, replacement)
 				end,
 			},
 		},
